@@ -280,12 +280,53 @@ function Movie({ movie, onSelectMovie }) {
 }
 
 function MovieDetails({ selectedId, oncloseMovie }) {
+  const [movie, setMovie] = useState({});
+  const [isLoading, setIsloading] = useState(false);
+
+  const {
+    Title: title,
+    Year: year,
+    Poster: poster,
+    Runtime: runtime,
+    imdbRating,
+    Plot: plot,
+    Released: released,
+    Actors: actors,
+    Director: director,
+    Genre: genre,
+  } = movie;
+  useEffect(() => {
+    async function getMovieDetails() {
+      setIsloading(true);
+      const res = await fetch(
+        `http://www.omdbapi.com/?apikey=${KEY}&i=${selectedId}`
+      );
+      const data = await res.json(); // Add 'await' to wait for the response data
+      setMovie(data);
+      setIsloading(false);
+    }
+
+    getMovieDetails();
+  }, [selectedId]);
+
   return (
     <div className=" details">
-      {selectedId}
-      <button className="btn-back" onClick={oncloseMovie}>
-        &larr;
-      </button>
+      {isLoading || movie === null ? (
+        <Loader />
+      ) : (
+        <header>
+          <button className="btn-back" onClick={oncloseMovie}>
+            &larr;
+          </button>
+          <img src={poster} alt={`poster of ${movie} movie`} />
+          <div className="details-overview">
+            <h2>{title}</h2>
+            <p>
+              {released} &bull; {runtime}
+            </p>
+          </div>
+        </header>
+      )}
     </div>
   );
 }
