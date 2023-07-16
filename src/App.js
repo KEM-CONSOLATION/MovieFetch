@@ -93,12 +93,15 @@ export default function App() {
   }
   useEffect(
     function () {
+      const controller = new AbortController();
+
       async function fetchMovies() {
         try {
           setIsloading(true);
           setError("");
           const res = await fetch(
-            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
+            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
+            { signal: controller.signal }
           );
 
           if (!res.ok)
@@ -108,9 +111,12 @@ export default function App() {
           if (data.Reponse === "False") throw new Error("Movie not Found");
 
           setMovies(data.Search);
+          setError("");
         } catch (err) {
           console.error(err.message);
-          setError(err.res);
+          if (err.name !== "AbortError") {
+            setError(err.message);
+          }
         } finally {
           setIsloading(false);
         }
@@ -121,7 +127,11 @@ export default function App() {
         setError("");
         return;
       }
+      handleCloseMovie();
       fetchMovies();
+      return () => {
+        controller.abort();
+      };
     },
     [query]
   );
@@ -346,6 +356,19 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
     if (!title) return;
     document.title = `Movie ${title}`;
   }, [title]);
+
+  useEffect(() => {
+    function callback(e) {
+      if (e.code === "Escape") {
+        onCloseMovie();
+        console.log("Closing Movie");
+      }
+    }
+    document.addEventListener("keydown", callback);
+    return () => {
+      document.removeEventListener("keydown", callback);
+    };
+  }, [onCloseMovie]);
   return (
     <div className=" details">
       {isLoading || movie === null ? (
